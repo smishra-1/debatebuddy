@@ -46,6 +46,17 @@ export function unlockedBadges(debates: DebateSummary[]): Set<BadgeId> {
   return unlocked;
 }
 
+/** The oldest reviewed debate that earned each badge (history arrives newest first). */
+export function badgeFirstEarned(debates: DebateSummary[]): Partial<Record<BadgeId, DebateSummary>> {
+  const first: Partial<Record<BadgeId, DebateSummary>> = {};
+  for (const debate of debates.filter(isReviewed)) {
+    for (const id of badgeIds) {
+      if (BADGE_RULES[id](debate.review.ratings)) first[id] = debate;
+    }
+  }
+  return first;
+}
+
 const dayKey = (date: Date) =>
   `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
 

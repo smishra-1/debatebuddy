@@ -39,6 +39,7 @@ export interface DebateSummary {
   opponent: Opponent;
   difficulty: Difficulty;
   turn_seconds: number;
+  rounds: number;
   status: DebateStatus;
   created_at: string;
   ended_at: string | null;

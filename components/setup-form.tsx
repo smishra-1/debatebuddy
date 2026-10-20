@@ -7,14 +7,22 @@ import { api } from "@/lib/client/api";
 import { useErrorMessage } from "@/lib/client/use-error-message";
 import { format } from "@/lib/i18n/config";
 import { useI18n } from "@/lib/i18n/provider";
-import { LIMITS, TURN_SECONDS } from "@/lib/limits";
+import { useSettings } from "@/lib/client/settings";
+import { LIMITS, ROUND_OPTIONS, TURN_SECONDS, type RoundCount } from "@/lib/limits";
 import { OPPONENT_EMOJI } from "@/lib/opponents";
 import { getSampleTopic } from "@/lib/topics";
-import { DIFFICULTIES, OPPONENTS, type DebateSummary, type Opponent, type Side } from "@/lib/types";
-import { btnPrimary, card, errorBox } from "./styles";
+import { DIFFICULTIES, OPPONENTS, type DebateSummary, type Difficulty, type Opponent, type Side } from "@/lib/types";
+import { BackButton } from "./back-button";
+import { btnPrimary, card, choiceTick, choiceTile as choice, errorBox } from "./styles";
 
-const choice =
-  "flex cursor-pointer gap-3 rounded-2xl border-2 border-border p-4 has-[:checked]:border-good has-[:checked]:bg-good-soft has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-[var(--ring)]";
+const ROUND_FEEL = ["short", "medium", "long"] as const;
+import { Spinner } from "./skeleton";
+
+const Tick = () => (
+  <span aria-hidden className={choiceTick}>
+    ✓
+  </span>
+);
 
 export function SetupForm() {
   const { locale, dict } = useI18n();
@@ -26,11 +34,17 @@ export function SetupForm() {
   const custom = (params.get("custom") ?? "").replace(/\s+/g, " ").trim().slice(0, LIMITS.topicMax);
   const topic = sample?.question[locale] ?? custom;
   const levelParam = params.get("level");
-  const difficulty = DIFFICULTIES.find((d) => d === levelParam) ?? "easy";
+  // Until the student picks something here, the defaults from Settings apply (a ?level= link wins over them).
+  const [settings] = useSettings();
+  const [pickedLevel, setDifficulty] = useState<Difficulty | null>(DIFFICULTIES.find((d) => d === levelParam) ?? null);
+  const [pickedRounds, setRounds] = useState<RoundCount | null>(null);
+  const [pickedSeconds, setTurnSeconds] = useState<(typeof TURN_SECONDS)[number] | null>(null);
+  const difficulty = pickedLevel ?? settings.difficulty;
+  const rounds = pickedRounds ?? settings.rounds;
+  const turnSeconds = pickedSeconds ?? settings.turnSeconds;
 
   const [side, setSide] = useState<Side>("for");
   const [opponent, setOpponent] = useState<Opponent>("fiona");
-  const [turnSeconds, setTurnSeconds] = useState<(typeof TURN_SECONDS)[number]>(60);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -50,7 +64,7 @@ export function SetupForm() {
     setError(null);
     try {
       const { debate } = await api<{ debate: DebateSummary }>("/api/debates", {
-        body: { topic, side, opponent, difficulty, turnSeconds, locale },
+        body: { topic, side, opponent, difficulty, turnSeconds, rounds, locale },
       });
       router.push(`/${locale}/debate/${debate.id}`);
     } catch (e) {
@@ -66,24 +80,26 @@ export function SetupForm() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
-      <Link href={`/${locale}`} className="inline-block font-bold text-primary hover:underline">
-        ← {dict.common.back}
-      </Link>
-      <h1 className="text-3xl font-extrabold">{dict.setup.title}</h1>
+      <BackButton fallback={`/${locale}`} />
+      <h1 className="text-3xl font-black">{dict.setup.title}</h1>
 
-      <div className={card}>
-        <p className="text-sm font-semibold text-muted">{dict.setup.yourTopic}</p>
-        <p className="text-2xl font-bold text-balance">
-          {sample?.emoji && <span aria-hidden>{sample.emoji} </span>}
-          {topic}
-        </p>
+      <div className={`${card} flex items-center gap-4 border-primary/30 bg-primary/5`}>
+        {sample?.emoji && (
+          <span aria-hidden className="grid size-14 shrink-0 place-items-center rounded-2xl bg-card text-4xl">
+            {sample.emoji}
+          </span>
+        )}
+        <div>
+          <p className="text-sm font-bold text-primary">{dict.setup.yourTopic}</p>
+          <p className="text-2xl font-extrabold text-balance">{topic}</p>
+        </div>
       </div>
 
       <fieldset className="space-y-3" disabled={pending}>
         <legend className="mb-2 text-xl font-bold">{dict.setup.pickSide}</legend>
         <div className="grid gap-3 sm:grid-cols-2">
           {sides.map((item) => (
-            <label key={item.value} className={`${choice} items-center`}>
+            <label key={item.value} className={`${choice} items-center gap-3`}>
               <input
                 type="radio"
                 name="side"
@@ -92,6 +108,7 @@ export function SetupForm() {
                 onChange={() => setSide(item.value)}
                 className="sr-only"
               />
+              <Tick />
               <span aria-hidden className="text-3xl">
                 {item.emoji}
               </span>
@@ -108,7 +125,7 @@ export function SetupForm() {
         <legend className="mb-2 text-xl font-bold">{dict.setup.pickOpponent}</legend>
         <div className="grid gap-3 sm:grid-cols-3">
           {OPPONENTS.map((value) => (
-            <label key={value} className={`${choice} flex-col items-center text-center`}>
+            <label key={value} className={`${choice} flex-col items-center gap-1 text-center`}>
               <input
                 type="radio"
                 name="opponent"
@@ -117,6 +134,7 @@ export function SetupForm() {
                 onChange={() => setOpponent(value)}
                 className="sr-only"
               />
+              <Tick />
               <span aria-hidden className="text-4xl">
                 {OPPONENT_EMOJI[value]}
               </span>
@@ -128,10 +146,56 @@ export function SetupForm() {
       </fieldset>
 
       <fieldset className="space-y-3" disabled={pending}>
+        <legend className="mb-2 text-xl font-bold">{dict.setup.pickLevel}</legend>
+        <div className="grid grid-cols-3 gap-3">
+          {DIFFICULTIES.map((value, index) => (
+            <label key={value} className={`${choice} flex-col items-center gap-0.5 !p-3 text-center`}>
+              <input
+                type="radio"
+                name="level"
+                value={value}
+                checked={difficulty === value}
+                onChange={() => setDifficulty(value)}
+                className="sr-only"
+              />
+              <Tick />
+              <span aria-hidden className="text-lg tracking-wider text-help">
+                {"★".repeat(index + 1)}
+              </span>
+              <span className="text-lg font-bold">{dict.setup.levels[value].name}</span>
+              <span className="text-sm text-muted">{dict.setup.levels[value].about}</span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
+
+      <fieldset className="space-y-3" disabled={pending}>
+        <legend className="mb-2 text-xl font-bold">{dict.setup.pickRounds}</legend>
+        <div className="grid grid-cols-3 gap-3">
+          {ROUND_OPTIONS.map((value, index) => (
+            <label key={value} className={`${choice} flex-col items-center gap-0.5 !p-3 text-center`}>
+              <input
+                type="radio"
+                name="rounds"
+                value={value}
+                checked={rounds === value}
+                onChange={() => setRounds(value)}
+                className="sr-only"
+              />
+              <Tick />
+              <span className="text-3xl font-black tabular-nums">{value}</span>
+              <span className="text-sm font-bold">{dict.setup.roundsWord}</span>
+              <span className="text-sm text-muted">{dict.setup.roundsAbout[ROUND_FEEL[index]]}</span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
+
+      <fieldset className="space-y-3" disabled={pending}>
         <legend className="mb-2 text-xl font-bold">{dict.setup.pickTime}</legend>
         <div className="grid grid-cols-2 gap-3">
           {TURN_SECONDS.map((value) => (
-            <label key={value} className={`${choice} items-center justify-center text-lg font-bold`}>
+            <label key={value} className={`${choice} items-center justify-center gap-2 text-lg font-bold`}>
               <input
                 type="radio"
                 name="time"
@@ -140,6 +204,7 @@ export function SetupForm() {
                 onChange={() => setTurnSeconds(value)}
                 className="sr-only"
               />
+              <Tick />
               <span aria-hidden>⏱</span> {value === 60 ? dict.setup.minute : dict.setup.twoMinutes}
             </label>
           ))}
@@ -152,11 +217,19 @@ export function SetupForm() {
         </p>
       )}
 
-      <div className="space-y-2 text-center">
-        <button type="button" onClick={() => void start()} disabled={pending} className={`${btnPrimary} w-full text-xl`}>
+      {/* Sticks to the bottom on small screens so the start button is always one tap away. */}
+      <div className="sticky bottom-0 -mx-4 space-y-2 border-t-2 border-border bg-background/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] text-center backdrop-blur sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none">
+        <button
+          type="button"
+          onClick={() => void start()}
+          disabled={pending}
+          aria-busy={pending}
+          className={`${btnPrimary} w-full !text-xl`}
+        >
+          {pending && <Spinner />}
           {pending ? dict.setup.starting : dict.setup.start}
         </button>
-        <p className="text-muted">{format(dict.setup.format, { rounds: LIMITS.rounds })}</p>
+        <p className="text-sm text-muted">{format(dict.setup.format, { rounds, minutes: Math.round((rounds * turnSeconds * 1.5) / 60) })}</p>
       </div>
     </div>
   );

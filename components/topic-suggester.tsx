@@ -6,7 +6,8 @@ import { api } from "@/lib/client/api";
 import { useErrorMessage } from "@/lib/client/use-error-message";
 import { useI18n } from "@/lib/i18n/provider";
 import { LIMITS } from "@/lib/limits";
-import { btnPrimary, btnSecondary, card, errorBox, input } from "./styles";
+import { btnChip, btnPrimary, card, errorBox, input } from "./styles";
+import { Spinner } from "./skeleton";
 
 export function TopicSuggester() {
   const { locale, dict } = useI18n();
@@ -32,10 +33,10 @@ export function TopicSuggester() {
   }
 
   return (
-    <section aria-labelledby="ai-topics" className={`${card} space-y-4`}>
+    <section aria-labelledby="ai-topics" className={`${card} space-y-4 border-next/30 bg-next-soft/40`}>
       <div>
-        <h2 id="ai-topics" className="text-xl font-bold">
-          {dict.topics.aiTitle}
+        <h2 id="ai-topics" className="text-xl font-extrabold">
+          <span aria-hidden>✨</span> {dict.topics.aiTitle}
         </h2>
         <p className="text-muted">{dict.topics.aiSubtitle}</p>
       </div>
@@ -52,7 +53,8 @@ export function TopicSuggester() {
           onChange={(e) => setInterest(e.target.value)}
           className={input}
         />
-        <button type="submit" disabled={loading} className={btnPrimary}>
+        <button type="submit" disabled={loading} aria-busy={loading} className={`${btnPrimary} shrink-0`}>
+          {loading && <Spinner />}
           {loading ? dict.topics.aiLoading : dict.topics.aiButton}
         </button>
       </form>
@@ -66,13 +68,13 @@ export function TopicSuggester() {
           <h3 className="font-bold">{dict.topics.aiResults}</h3>
           <ul className="space-y-2">
             {topics.map((topic) => (
-              <li key={topic} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border-2 border-border p-3">
-                <span className="min-w-0 flex-1">{topic}</span>
-                <Link
-                  href={`/${locale}/setup?custom=${encodeURIComponent(topic)}`}
-                  className={`${btnSecondary} !px-4 !py-2 !text-base`}
-                >
-                  {dict.topics.practiceThis}
+              <li
+                key={topic}
+                className="flex animate-pop-in flex-wrap items-center justify-between gap-3 rounded-2xl border-2 border-border bg-card p-3"
+              >
+                <span className="min-w-0 flex-1 text-lg font-semibold">{topic}</span>
+                <Link href={`/${locale}/setup?custom=${encodeURIComponent(topic)}`} className={btnChip}>
+                  {dict.topics.practiceThis} <span aria-hidden>→</span>
                 </Link>
               </li>
             ))}

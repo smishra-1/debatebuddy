@@ -4,11 +4,15 @@ import Link from "next/link";
 import { useApiResource } from "@/lib/client/use-api-resource";
 import { format } from "@/lib/i18n/config";
 import { useI18n } from "@/lib/i18n/provider";
-import { badgeIds, debateStars, starSeries, streakDays, totalStars, unlockedBadges, type BadgeId } from "@/lib/ratings";
+import { badgeIds, debateStars, starSeries, streakDays, totalStars, unlockedBadges } from "@/lib/ratings";
+import { OPPONENT_EMOJI } from "@/lib/opponents";
 import type { DebateSummary } from "@/lib/types";
+import { BackButton } from "./back-button";
+import { BADGE_EMOJI } from "./badges-view";
+import { Loading, Skeleton } from "./skeleton";
+import { Stars } from "./stars";
 import { btnPrimary, btnSecondary, card } from "./styles";
 
-const BADGE_EMOJI: Record<BadgeId, string> = { thinker: "🧠", finder: "📚", coolhead: "😎", champ: "🏆" };
 
 export function ProgressView() {
   const { locale, dict } = useI18n();
@@ -24,7 +28,24 @@ export function ProgressView() {
       </div>
     );
   }
-  if (!data) return <p className="text-center text-muted">{dict.common.loading}</p>;
+  if (!data) {
+    return (
+      <Loading>
+        <div className="mx-auto max-w-4xl space-y-6">
+          <Skeleton className="h-9 w-64" />
+          <div className="grid grid-cols-3 gap-3">
+            <Skeleton className="h-32 rounded-3xl" />
+            <Skeleton className="h-32 rounded-3xl" />
+            <Skeleton className="h-32 rounded-3xl" />
+          </div>
+          <div className="grid gap-5 md:grid-cols-2">
+            <Skeleton className="h-56 rounded-3xl" />
+            <Skeleton className="h-56 rounded-3xl" />
+          </div>
+        </div>
+      </Loading>
+    );
+  }
 
   const debates = data.debates;
   const series = starSeries(debates);
@@ -45,16 +66,19 @@ export function ProgressView() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
-      <h1 className="text-3xl font-extrabold">🗺 {dict.progress.title}</h1>
+      <BackButton fallback={`/${locale}`} />
+      <h1 className="text-3xl font-black">
+        <span aria-hidden>🗺</span> {dict.progress.title}
+      </h1>
 
       <ul className="grid grid-cols-3 gap-3">
         {stats.map((stat) => (
-          <li key={stat.label} className={`${card} text-center`}>
-            <p aria-hidden className="text-3xl">
+          <li key={stat.label} className={`${card} !px-2 text-center`}>
+            <p aria-hidden className="text-2xl sm:text-3xl">
               {stat.emoji}
             </p>
-            <p className="text-3xl font-extrabold">{stat.value}</p>
-            <p className="text-muted">{stat.label}</p>
+            <p className="text-3xl font-black tabular-nums">{stat.value}</p>
+            <p className="text-sm leading-tight text-muted sm:text-base">{stat.label}</p>
           </li>
         ))}
       </ul>
@@ -76,16 +100,26 @@ export function ProgressView() {
                   aria-label={format(dict.common.starsOutOf, { count: stars })}
                 >
                   <span className="text-sm font-bold">{stars}</span>
-                  <span className="w-full rounded-t-lg bg-help" style={{ height: `${(stars / 5) * 80}%` }} />
+                  <span
+                    className="w-full max-w-10 origin-bottom rounded-t-lg bg-help motion-safe:animate-fade-up"
+                    style={{ height: `${(stars / 5) * 80}%` }}
+                  />
                 </li>
               ))}
             </ul>
           )}
         </section>
 
-        <section className={card} aria-labelledby="badges">
-          <h2 id="badges" className="mb-3 text-xl font-extrabold">
+        <Link
+          href={`/${locale}/badges`}
+          aria-labelledby="badges"
+          className={`${card} group block transition-colors hover:border-primary`}
+        >
+          <h2 id="badges" className="mb-3 flex items-center justify-between gap-2 text-xl font-extrabold">
             {dict.progress.myBadges}
+            <span className="text-base font-bold text-primary group-hover:underline">
+              {dict.progress.seeAllBadges} <span aria-hidden>→</span>
+            </span>
           </h2>
           <ul className="grid grid-cols-2 gap-3">
             {badgeIds.map((id) => {
@@ -94,10 +128,10 @@ export function ProgressView() {
                 <li
                   key={id}
                   className={`flex flex-col items-center gap-1 rounded-2xl border-2 p-3 text-center font-bold ${
-                    unlocked ? "border-good/40 bg-good-soft" : "border-border opacity-70"
+                    unlocked ? "border-good/40 bg-good-soft" : "border-dashed border-border text-muted"
                   }`}
                 >
-                  <span aria-hidden className="text-3xl">
+                  <span aria-hidden className={`text-3xl ${unlocked ? "" : "opacity-60 grayscale"}`}>
                     {unlocked ? BADGE_EMOJI[id] : "🔒"}
                   </span>
                   <span>{dict.progress.badges[id]}</span>
@@ -106,7 +140,7 @@ export function ProgressView() {
               );
             })}
           </ul>
-        </section>
+        </Link>
       </div>
 
       <section className={`${card} space-y-3`} aria-labelledby="my-debates">
@@ -114,7 +148,10 @@ export function ProgressView() {
           {dict.progress.myDebates}
         </h2>
         {debates.length === 0 ? (
-          <div className="space-y-3">
+          <div className="space-y-3 rounded-2xl border-2 border-dashed border-border p-6 text-center">
+            <p aria-hidden className="text-4xl">
+              🌱
+            </p>
             <p className="text-muted">{dict.progress.empty}</p>
             <Link href={`/${locale}`} className={btnPrimary}>
               {dict.progress.startFirst}
@@ -122,31 +159,35 @@ export function ProgressView() {
           </div>
         ) : (
           <ul className="divide-y-2 divide-border">
-            {debates.map((debate) => (
+            {debates.slice(0, 5).map((debate) => (
               <li key={debate.id}>
                 <Link
                   href={`/${locale}/debate/${debate.id}`}
-                  className="flex flex-wrap items-center justify-between gap-2 py-3 hover:text-primary"
+                  className="-mx-2 flex items-center gap-3 rounded-xl px-2 py-3 transition-colors hover:bg-primary/8"
                 >
-                  <span>
+                  <span aria-hidden className="text-2xl">
+                    {OPPONENT_EMOJI[debate.opponent]}
+                  </span>
+                  <span className="min-w-0 flex-1">
                     <span className="block text-lg font-bold">{debate.topic}</span>
                     <span className="text-sm text-muted">{dayLabel(debate.created_at)}</span>
                   </span>
                   {debate.review ? (
-                    <span
-                      className="text-xl text-help"
-                      role="img"
-                      aria-label={format(dict.common.starsOutOf, { count: debateStars(debate.review.ratings) })}
-                    >
-                      {"★".repeat(debateStars(debate.review.ratings))}
-                    </span>
+                    <Stars count={debateStars(debate.review.ratings)} className="text-xl" />
                   ) : (
-                    <span className="font-semibold text-timer">{dict.progress.inProgress}</span>
+                    <span className="shrink-0 rounded-full bg-timer-soft px-2.5 py-0.5 text-sm font-bold text-timer">
+                      {dict.progress.inProgress}
+                    </span>
                   )}
                 </Link>
               </li>
             ))}
           </ul>
+        )}
+        {debates.length > 0 && (
+          <Link href={`/${locale}/history`} className="inline-flex font-bold text-primary hover:underline">
+            {dict.progress.seeAllDebates} <span aria-hidden>→</span>
+          </Link>
         )}
       </section>
     </div>

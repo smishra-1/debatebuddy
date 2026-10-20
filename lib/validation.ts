@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { locales } from "@/lib/i18n/config";
-import { LIMITS, TURN_SECONDS } from "@/lib/limits";
+import { LIMITS, ROUND_OPTIONS, TURN_SECONDS } from "@/lib/limits";
 import { DIFFICULTIES, OPPONENTS } from "@/lib/types";
 
 // Strips control characters (keeps \n and \t) so stored text can't smuggle odd bytes.
@@ -26,6 +26,7 @@ export const createDebateSchema = z.object({
   opponent: z.enum(OPPONENTS),
   difficulty: z.enum(DIFFICULTIES),
   turnSeconds: z.union([z.literal(TURN_SECONDS[0]), z.literal(TURN_SECONDS[1])]),
+  rounds: z.union(ROUND_OPTIONS.map((n) => z.literal(n))).default(LIMITS.rounds),
   locale,
 });
 
@@ -35,6 +36,16 @@ export const sendMessageSchema = z.object({
 
 export const coachQuestionSchema = z.object({
   question: cleanText(1, LIMITS.questionMax),
+});
+
+/** Home-screen doubts chat: the client keeps the conversation and sends the recent part. */
+export const askSchema = z.object({
+  locale,
+  messages: z
+    .array(z.object({ role: z.enum(["user", "assistant"]), content: cleanText(1, LIMITS.messageMax) }))
+    .min(1)
+    .max(LIMITS.askHistoryMax)
+    .refine((messages) => messages.at(-1)?.role === "user", "last message must be the question"),
 });
 
 export const suggestTopicsSchema = z.object({

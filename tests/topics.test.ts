@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { locales } from "@/lib/i18n/config";
 import { LIMITS } from "@/lib/limits";
 import {
+  badgeFirstEarned,
   badgeIds,
   debateStars,
   starSeries,
@@ -56,6 +57,7 @@ const debate = (id: string, r: Ratings | null, createdAt = "2026-01-01T12:00:00"
   opponent: "fiona",
   difficulty: "easy",
   turn_seconds: 60,
+  rounds: 3,
   status: r ? "ended" : "active",
   created_at: createdAt,
   ended_at: null,
@@ -91,6 +93,18 @@ describe("badges", () => {
     const got = unlockedBadges([debate("a", ratings({ thinking: 4, facts: 4, kindness: 5, answering: 2 }))]);
     expect([...got].sort()).toEqual(["coolhead", "finder", "thinker"]);
     expect(badgeIds).toContain("champ");
+  });
+
+  it("point each badge at the oldest debate that earned it", () => {
+    // History is newest first: "new" and "old" both earn Fact Finder, only "new" earns Answer Champ.
+    const first = badgeFirstEarned([
+      debate("new", ratings({ facts: 5, answering: 4 })),
+      debate("open", null),
+      debate("old", ratings({ facts: 4 })),
+    ]);
+    expect(first.finder?.id).toBe("old");
+    expect(first.champ?.id).toBe("new");
+    expect(first.coolhead).toBeUndefined();
   });
 });
 

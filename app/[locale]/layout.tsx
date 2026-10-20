@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Noto_Sans_Devanagari } from "next/font/google";
+import { Noto_Sans_Devanagari, Nunito } from "next/font/google";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { Header } from "@/components/header";
@@ -9,7 +9,8 @@ import { isLocale, locales } from "@/lib/i18n/config";
 import { I18nProvider } from "@/lib/i18n/provider";
 import "../globals.css";
 
-const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
+// Rounded, very legible letterforms for young readers; Devanagari falls back to Noto.
+const nunito = Nunito({ variable: "--font-nunito", subsets: ["latin"] });
 const devanagari = Noto_Sans_Devanagari({
   variable: "--font-devanagari",
   subsets: ["devanagari"],
@@ -34,7 +35,7 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
   return (
     <html
       lang={locale}
-      className={`${geistSans.variable} ${devanagari.variable} h-full antialiased`}
+      className={`${nunito.variable} ${devanagari.variable} h-full antialiased`}
       // The inline script below may set data-theme before React hydrates.
       suppressHydrationWarning
     >
@@ -50,7 +51,7 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
             {dict.common.skipToContent}
           </a>
           {/* Header reads the pathname, which is only known per request on dynamic routes. */}
-          <Suspense fallback={<div className="h-[66px] border-b-2 border-border" />}>
+          <Suspense fallback={<div className="h-[62px] border-b-2 border-border" />}>
             <Header />
           </Suspense>
           <main id="content" className="mx-auto w-full max-w-5xl flex-1 px-4 py-8 sm:px-6">

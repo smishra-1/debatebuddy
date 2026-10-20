@@ -6,6 +6,7 @@ import type { DebateMessage, Difficulty, Hint, Opponent, Review, Side } from "@/
 import { hintSchema, reviewSchema, topicCheckSchema, topicSuggestionsSchema } from "@/lib/validation";
 import { MODEL_ID } from "./model";
 import {
+  askBuddySystemPrompt,
   coachSystemPrompt,
   hintSystemPrompt,
   opponentSystemPrompt,
@@ -38,13 +39,14 @@ export async function generateOpponentReply(input: {
   side: Side;
   opponent: Opponent;
   difficulty: Difficulty;
+  rounds: number;
   locale: Locale;
   history: DebateMessage[];
 }): Promise<string> {
   const { text } = await run((abortSignal) =>
     generateText({
       model: MODEL_ID,
-      system: opponentSystemPrompt(input.topic, input.side, input.locale, input.opponent, input.difficulty),
+      system: opponentSystemPrompt(input.topic, input.side, input.locale, input.opponent, input.difficulty, input.rounds),
       messages: toModelMessages(input.history, "debate"),
       maxOutputTokens: 300,
       abortSignal,
@@ -91,6 +93,25 @@ export async function generateCoachAnswer(input: {
         `\n\n<transcript>\n${transcriptText(input.history, input.side)}\n</transcript>`,
       messages: toModelMessages(input.history, "coach"),
       maxOutputTokens: 500,
+      abortSignal,
+    }),
+  );
+  const answer = text.trim();
+  if (!answer) throw new ApiError(502, "ai_unavailable");
+  return answer;
+}
+
+/** General "how does debating work?" help for the home-screen chat; nothing is stored. */
+export async function answerDoubt(
+  locale: Locale,
+  messages: { role: "user" | "assistant"; content: string }[],
+): Promise<string> {
+  const { text } = await run((abortSignal) =>
+    generateText({
+      model: MODEL_ID,
+      system: askBuddySystemPrompt(locale),
+      messages,
+      maxOutputTokens: 400,
       abortSignal,
     }),
   );

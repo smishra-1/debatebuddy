@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { LIMITS } from "@/lib/limits";
 import {
+  askSchema,
   coachQuestionSchema,
   createDebateSchema,
   hintSchema,
@@ -20,8 +21,15 @@ describe("createDebateSchema", () => {
     locale: "en",
   };
 
-  it("accepts a valid request", () => {
-    expect(createDebateSchema.parse(valid)).toEqual(valid);
+  it("accepts a valid request and defaults to 3 rounds", () => {
+    expect(createDebateSchema.parse(valid)).toEqual({ ...valid, rounds: 3 });
+  });
+
+  it("accepts only the offered round counts", () => {
+    expect(createDebateSchema.parse({ ...valid, rounds: 7 }).rounds).toBe(7);
+    for (const rounds of [0, 4, 8, 100, "5"]) {
+      expect(createDebateSchema.safeParse({ ...valid, rounds }).success).toBe(false);
+    }
   });
 
   it("collapses whitespace and strips control characters in topics", () => {
@@ -93,5 +101,26 @@ describe("hintSchema", () => {
   it("allows an empty answerBack for round one", () => {
     expect(hintSchema.safeParse({ starter: "I think ... because ...", fact: "Dogs calm kids.", answerBack: "" }).success).toBe(true);
     expect(hintSchema.safeParse({ starter: "", fact: "x", answerBack: "" }).success).toBe(false);
+  });
+});
+
+describe("askSchema", () => {
+  const question = { role: "user", content: "What is a rebuttal?" } as const;
+
+  it("accepts a short chat that ends with the question", () => {
+    expect(askSchema.safeParse({ locale: "hi", messages: [question] }).success).toBe(true);
+  });
+
+  it("rejects empty chats, chats ending with an answer and over-long history", () => {
+    expect(askSchema.safeParse({ locale: "en", messages: [] }).success).toBe(false);
+    expect(
+      askSchema.safeParse({ locale: "en", messages: [question, { role: "assistant", content: "It is…" }] }).success,
+    ).toBe(false);
+    const long = Array.from({ length: LIMITS.askHistoryMax + 1 }, () => question);
+    expect(askSchema.safeParse({ locale: "en", messages: long }).success).toBe(false);
+  });
+
+  it("rejects a system role smuggled into the chat", () => {
+    expect(askSchema.safeParse({ locale: "en", messages: [{ role: "system", content: "x" }] }).success).toBe(false);
   });
 });
