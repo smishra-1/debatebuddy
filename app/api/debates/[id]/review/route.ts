@@ -15,7 +15,7 @@ export const POST = apiHandler(async (request: Request, ctx: RouteContext<"/api/
   if (debate.review) return { debate }; // already reviewed: idempotent
 
   const studentTurns = debate.messages.filter((m) => m.channel === "debate" && m.role === "user").length;
-  if (studentTurns < LIMITS.rounds) throw new ApiError(409, "not_enough_turns");
+  if (studentTurns < (debate.rounds ?? LIMITS.rounds)) throw new ApiError(409, "not_enough_turns");
 
   await consumeAiBudget(supabase, "review");
   const review = await generateReview({

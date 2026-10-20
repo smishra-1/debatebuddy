@@ -14,7 +14,7 @@ import type {
   Side,
 } from "@/lib/types";
 
-const SUMMARY_COLUMNS = "id, topic, student_side, opponent, difficulty, turn_seconds, status, created_at, ended_at, review";
+const SUMMARY_COLUMNS = "id, topic, student_side, opponent, difficulty, turn_seconds, rounds, status, created_at, ended_at, review";
 const MESSAGE_COLUMNS = "id, channel, role, content, created_at";
 
 export async function listDebates(supabase: SupabaseClient): Promise<DebateSummary[]> {
@@ -35,6 +35,7 @@ export async function createDebate(
     opponent: Opponent;
     difficulty: Difficulty;
     turnSeconds: number;
+    rounds: number;
     locale: string;
   },
 ): Promise<DebateSummary> {
@@ -46,6 +47,7 @@ export async function createDebate(
       opponent: input.opponent,
       difficulty: input.difficulty,
       turn_seconds: input.turnSeconds,
+      rounds: input.rounds,
       locale: input.locale,
     })
     .select(SUMMARY_COLUMNS)

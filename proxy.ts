@@ -3,7 +3,7 @@ import { hasSessionCookie, sessionCookieName } from "@/lib/auth/routes";
 import { isLocale, negotiateLocale } from "@/lib/i18n/config";
 
 /** Pages anyone can open without an account. */
-const PUBLIC_PAGES = new Set(["login", "signup", "topics"]);
+const PUBLIC_PAGES = new Set(["login", "signup", "topics", "welcome", "learn", "how-to-play"]);
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const cookieName = supabaseUrl ? sessionCookieName(supabaseUrl) : null;
@@ -23,6 +23,13 @@ export function proxy(request: NextRequest) {
   // so a stale cookie can never bounce between here and the login page.
   const signedIn =
     cookieName !== null && hasSessionCookie(request.cookies.getAll().map((c) => c.name), cookieName);
+
+  // Newcomers opening the app see the introduction first, not a login form.
+  if (!signedIn && !page) {
+    const url = request.nextUrl.clone();
+    url.pathname = `/${first}/welcome`;
+    return NextResponse.redirect(url);
+  }
 
   if (!signedIn && !PUBLIC_PAGES.has(page ?? "")) {
     const url = request.nextUrl.clone();

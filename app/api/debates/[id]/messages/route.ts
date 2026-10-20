@@ -15,7 +15,7 @@ export const POST = apiHandler(async (request: Request, ctx: RouteContext<"/api/
   const debate = await getDebate(supabase, id);
   if (debate.status === "ended") throw new ApiError(409, "debate_ended");
   const studentTurns = debate.messages.filter((m) => m.channel === "debate" && m.role === "user").length;
-  if (studentTurns >= LIMITS.rounds) throw new ApiError(409, "turn_limit");
+  if (studentTurns >= (debate.rounds ?? LIMITS.rounds)) throw new ApiError(409, "turn_limit");
 
   await consumeAiBudget(supabase, "debate_reply");
 
@@ -32,6 +32,7 @@ export const POST = apiHandler(async (request: Request, ctx: RouteContext<"/api/
     side: debate.student_side,
     opponent: debate.opponent,
     difficulty: debate.difficulty,
+    rounds: debate.rounds ?? LIMITS.rounds,
     locale: isLocale(debate.locale) ? debate.locale : "en",
     history: [...debate.messages, draft],
   });

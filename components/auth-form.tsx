@@ -11,7 +11,9 @@ import { useI18n } from "@/lib/i18n/provider";
 import { getBrowserSupabase } from "@/lib/supabase/browser";
 import { SupabaseNotConfiguredError } from "@/lib/supabase/env";
 import { logInSchema, NAME_MAX, PASSWORD_MIN, signUpSchema } from "@/lib/validation";
+import { BackButton } from "./back-button";
 import { btnPrimary, card, errorBox, input } from "./styles";
+import { Spinner } from "./skeleton";
 
 type Mode = "login" | "signup";
 
@@ -113,11 +115,12 @@ export function AuthForm({ mode }: { mode: Mode }) {
 
   return (
     <div className="mx-auto max-w-md space-y-6">
+      <BackButton fallback={`/${locale}/welcome`} />
       <header className="space-y-2 text-center">
-        <p aria-hidden className="text-5xl">
-          💬
+        <p aria-hidden className="mx-auto grid size-20 place-items-center rounded-3xl bg-primary/10 text-5xl">
+          {isLogin ? "👋" : "🎉"}
         </p>
-        <h1 className="text-3xl font-extrabold">{isLogin ? t.loginTitle : t.signupTitle}</h1>
+        <h1 className="text-3xl font-black">{isLogin ? t.loginTitle : t.signupTitle}</h1>
         <p className="text-lg text-muted">{isLogin ? t.loginSubtitle : t.signupSubtitle}</p>
       </header>
 
@@ -193,7 +196,8 @@ export function AuthForm({ mode }: { mode: Mode }) {
           </p>
         )}
 
-        <button type="submit" disabled={pending} className={`${btnPrimary} w-full`}>
+        <button type="submit" disabled={pending} aria-busy={pending} className={`${btnPrimary} w-full`}>
+          {pending && <Spinner />}
           {pending ? t.pending : isLogin ? t.loginButton : t.signupButton}
         </button>
         {!isLogin && <p className="text-sm text-muted">{t.grownUp}</p>}

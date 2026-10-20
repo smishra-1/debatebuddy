@@ -28,13 +28,30 @@ export function Countdown({ seconds, paused }: Props) {
 
   const time = `${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")}`;
   const urgent = left <= 10;
+  const done = left === 0;
   return (
-    <p
-      role="timer"
-      aria-label={format(dict.arena.timeLeft, { time })}
-      className={`rounded-full px-4 py-2 text-lg font-extrabold ${urgent ? "bg-against/15 text-against" : "bg-timer-soft text-timer"}`}
-    >
-      ⏱ {time}
-    </p>
+    <div className="flex flex-col items-end gap-1">
+      <p
+        role="timer"
+        aria-label={format(dict.arena.timeLeft, { time })}
+        className={`flex items-center gap-2 rounded-full px-4 py-2 text-lg font-extrabold tabular-nums transition-colors ${
+          urgent ? "bg-against/15 text-against" : "bg-timer-soft text-timer"
+        } ${urgent && !done ? "motion-safe:animate-pulse" : ""}`}
+      >
+        <span aria-hidden>⏱</span> {time}
+      </p>
+      <span aria-hidden className="h-1.5 w-full overflow-hidden rounded-full bg-border/60">
+        <span
+          className={`block h-full rounded-full transition-[width] duration-300 ease-linear ${urgent ? "bg-against" : "bg-timer"}`}
+          style={{ width: `${(left / seconds) * 100}%` }}
+        />
+      </span>
+      {/* Announced once when it appears; sending is still allowed. */}
+      {done && (
+        <p role="status" className="animate-fade-up text-sm font-bold text-against">
+          {dict.arena.timeUp}
+        </p>
+      )}
+    </div>
   );
 }
