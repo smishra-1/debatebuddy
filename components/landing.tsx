@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useUser } from "@/lib/client/use-user";
 import { useI18n } from "@/lib/i18n/provider";
+import { Logo } from "./logo";
 import { MessageBubble } from "./message-bubble";
 import { btnPrimary, btnSecondary, card, textLink } from "./styles";
 
@@ -17,6 +18,7 @@ export function Landing() {
     <div className="space-y-14">
       <section className="grid items-center gap-10 lg:grid-cols-[1.1fr_1fr]">
         <div className="animate-fade-up space-y-5">
+          <Logo title={dict.meta.title} size="lg" />
           <p className="inline-flex rounded-full bg-primary/10 px-3 py-1 text-sm font-bold text-primary">{t.eyebrow}</p>
           <h1 className="text-4xl font-black leading-tight text-balance sm:text-5xl">{t.title}</h1>
           <p className="max-w-xl text-lg text-muted text-pretty">{t.subtitle}</p>

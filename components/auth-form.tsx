@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
@@ -117,9 +118,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
     <div className="mx-auto max-w-md space-y-6">
       <BackButton fallback={`/${locale}/welcome`} />
       <header className="space-y-2 text-center">
-        <p aria-hidden className="mx-auto grid size-20 place-items-center rounded-3xl bg-primary/10 text-5xl">
-          {isLogin ? "👋" : "🎉"}
-        </p>
+        <Image src="/brand/mark-192.png" alt="" width={96} height={96} priority className="mx-auto size-24" />
         <h1 className="text-3xl font-black">{isLogin ? t.loginTitle : t.signupTitle}</h1>
         <p className="text-lg text-muted">{isLogin ? t.loginSubtitle : t.signupSubtitle}</p>
       </header>

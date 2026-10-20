@@ -7,6 +7,7 @@ import { useUser } from "@/lib/client/use-user";
 import { format, localeNames, locales, type Locale } from "@/lib/i18n/config";
 import { useI18n } from "@/lib/i18n/provider";
 import { useTrackNavigation } from "./back-button";
+import { Logo } from "./logo";
 import { ThemeToggle } from "./theme-toggle";
 import { totalStars } from "@/lib/ratings";
 import type { DebateSummary } from "@/lib/types";
@@ -42,14 +43,8 @@ export function Header() {
   return (
     <header className="sticky top-0 z-40 border-b-2 border-border bg-card/90 backdrop-blur supports-[backdrop-filter]:bg-card/80">
       <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2.5 sm:px-6">
-        <Link href={`/${locale}`} className="flex shrink-0 items-center gap-2 text-xl font-black tracking-tight">
-          <span
-            aria-hidden
-            className="grid size-10 place-items-center rounded-xl bg-primary text-xl shadow-[0_3px_0_var(--primary-depth)]"
-          >
-            💬
-          </span>
-          <span className="hidden min-[400px]:inline">{dict.meta.title}</span>
+        <Link href={`/${locale}`} aria-label={dict.meta.title} className="shrink-0 rounded-xl">
+          <Logo title={dict.meta.title} compact />
         </Link>
 
         {user && (
