@@ -9,10 +9,11 @@ import { useErrorMessage } from "@/lib/client/use-error-message";
 import { useI18n } from "@/lib/i18n/provider";
 import { LIMITS } from "@/lib/limits";
 import { OPPONENT_EMOJI } from "@/lib/opponents";
-import { debateStars } from "@/lib/ratings";
+import { DEBATE_MAX_STARS, debateStars } from "@/lib/ratings";
 import { sampleTopics } from "@/lib/topics";
 import type { DebateSummary } from "@/lib/types";
 import { AskBuddy } from "./ask-buddy";
+import { Mascot } from "./mascot";
 import { Skeleton, Spinner } from "./skeleton";
 import { Stars } from "./stars";
 import { btnChip, btnPrimary, btnSecondary, card, errorBox, input, textLink } from "./styles";
@@ -98,11 +99,14 @@ export function HomeScreen() {
       <div className="grid gap-8 lg:grid-cols-[1fr_19rem]">
         <section aria-labelledby="home-title" className="space-y-6">
           <header className="flex flex-wrap items-end justify-between gap-4">
-            <div className="space-y-1">
-              <h1 id="home-title" className="text-3xl font-black text-balance sm:text-4xl">
-                {dict.home.title}
-              </h1>
-              <p className="text-lg text-muted">{dict.home.tapTopic}</p>
+            <div className="flex items-center gap-4">
+              <Mascot className="w-16 shrink-0 sm:w-20" priority />
+              <div className="space-y-1">
+                <h1 id="home-title" className="text-3xl font-black text-balance sm:text-4xl">
+                  {dict.home.title}
+                </h1>
+                <p className="text-lg text-muted">{dict.home.tapTopic}</p>
+              </div>
             </div>
             <button
               type="button"
@@ -227,9 +231,7 @@ export function HomeScreen() {
               </div>
             ) : recent.length === 0 ? (
               <p className="rounded-2xl border-2 border-dashed border-border p-4 text-center text-muted">
-                <span aria-hidden className="mb-1 block text-3xl">
-                  🌱
-                </span>
+                <Mascot className="mx-auto mb-2 w-20" />
                 {dict.home.noDebates}
               </p>
             ) : (
@@ -245,7 +247,7 @@ export function HomeScreen() {
                       </span>
                       <span className="line-clamp-2 min-w-0 flex-1 font-semibold leading-snug">{debate.topic}</span>
                       {debate.review ? (
-                        <Stars count={debateStars(debate.review.ratings)} />
+                        <Stars count={debateStars(debate.review.ratings)} max={DEBATE_MAX_STARS} />
                       ) : (
                         <span className="shrink-0 rounded-full bg-timer-soft px-2 py-0.5 text-xs font-bold text-timer">
                           {dict.progress.inProgress}

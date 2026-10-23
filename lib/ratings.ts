@@ -6,10 +6,16 @@ type ReviewedDebate = DebateSummary & { review: Review };
 
 const isReviewed = (debate: DebateSummary): debate is ReviewedDebate => debate.review !== null;
 
-/** Stars earned in one debate: the average skill rating, rounded to 1-5. */
+/** Each skill is rated 1-5; a whole debate earns 1-20 stars. */
+export const SKILL_MAX_STARS = 5;
+export const DEBATE_MIN_STARS = 1;
+export const DEBATE_MAX_STARS = 20;
+
+/** Stars earned in one debate: the average skill rating (1-5) stretched evenly onto 1-20. */
 export function debateStars(ratings: Ratings): number {
-  const total = skillKeys.reduce((sum, key) => sum + ratings[key], 0);
-  return Math.min(5, Math.max(1, Math.round(total / skillKeys.length)));
+  const average = skillKeys.reduce((sum, key) => sum + ratings[key], 0) / skillKeys.length;
+  const stars = DEBATE_MIN_STARS + ((average - 1) / (SKILL_MAX_STARS - 1)) * (DEBATE_MAX_STARS - DEBATE_MIN_STARS);
+  return Math.min(DEBATE_MAX_STARS, Math.max(DEBATE_MIN_STARS, Math.round(stars)));
 }
 
 export function totalStars(debates: DebateSummary[]): number {

@@ -71,19 +71,20 @@ const debate = (id: string, r: Ratings | null, createdAt = "2026-01-01T12:00:00"
 });
 
 describe("stars", () => {
-  it("averages skills into 1-5 stars", () => {
-    expect(debateStars(ratings({ ideas: 5, facts: 4, thinking: 4, answering: 4, kindness: 5 }))).toBe(4);
+  it("stretches the skill average onto 1-20 stars", () => {
+    expect(debateStars(ratings({ ideas: 5, facts: 4, thinking: 4, answering: 4, kindness: 5 }))).toBe(17);
     expect(debateStars(ratings({ ideas: 1, facts: 1, thinking: 1, answering: 1, kindness: 1 }))).toBe(1);
+    expect(debateStars(ratings({ ideas: 5, facts: 5, thinking: 5, answering: 5, kindness: 5 }))).toBe(20);
   });
 
   it("totals only reviewed debates", () => {
-    expect(totalStars([debate("a", ratings()), debate("b", null), debate("c", ratings({ ideas: 5, facts: 5, thinking: 5, answering: 5, kindness: 5 }))])).toBe(8);
+    expect(totalStars([debate("a", ratings()), debate("b", null), debate("c", ratings({ ideas: 5, facts: 5, thinking: 5, answering: 5, kindness: 5 }))])).toBe(31);
   });
 
   it("orders the series oldest to newest and skips unreviewed debates", () => {
     const five = ratings({ ideas: 5, facts: 5, thinking: 5, answering: 5, kindness: 5 });
     // History arrives newest first.
-    expect(starSeries([debate("c", five), debate("b", null), debate("a", ratings({ ideas: 2, facts: 2, thinking: 2, answering: 2, kindness: 2 }))])).toEqual([2, 5]);
+    expect(starSeries([debate("c", five), debate("b", null), debate("a", ratings({ ideas: 2, facts: 2, thinking: 2, answering: 2, kindness: 2 }))])).toEqual([6, 20]);
   });
 });
 

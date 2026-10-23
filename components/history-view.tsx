@@ -7,9 +7,10 @@ import { format } from "@/lib/i18n/config";
 import { useI18n } from "@/lib/i18n/provider";
 import { LIMITS } from "@/lib/limits";
 import { OPPONENT_EMOJI } from "@/lib/opponents";
-import { debateStars } from "@/lib/ratings";
+import { DEBATE_MAX_STARS, debateStars } from "@/lib/ratings";
 import type { DebateStatus, DebateSummary } from "@/lib/types";
 import { BackButton } from "./back-button";
+import { Mascot } from "./mascot";
 import { Loading, Skeleton } from "./skeleton";
 import { Stars } from "./stars";
 import { btnPrimary, btnSecondary, card, input } from "./styles";
@@ -90,9 +91,7 @@ export function HistoryView() {
         </Loading>
       ) : data.debates.length === 0 ? (
         <div className={`${card} space-y-3 text-center`}>
-          <p aria-hidden className="text-4xl">
-            🌱
-          </p>
+          <Mascot className="mx-auto w-32" />
           <p className="text-muted">{dict.progress.empty}</p>
           <Link href={`/${locale}`} className={btnPrimary}>
             {dict.progress.startFirst}
@@ -126,7 +125,7 @@ export function HistoryView() {
                       </span>
                     </span>
                     {debate.review ? (
-                      <Stars count={debateStars(debate.review.ratings)} className="text-lg" />
+                      <Stars count={debateStars(debate.review.ratings)} max={DEBATE_MAX_STARS} className="text-lg" />
                     ) : (
                       <span className="shrink-0 rounded-full bg-timer-soft px-2.5 py-0.5 text-sm font-bold text-timer">
                         {dict.progress.inProgress}

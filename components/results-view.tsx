@@ -10,10 +10,11 @@ import { format } from "@/lib/i18n/config";
 import { useI18n } from "@/lib/i18n/provider";
 import { LIMITS } from "@/lib/limits";
 import { OPPONENT_EMOJI } from "@/lib/opponents";
-import { debateStars, skillKeys } from "@/lib/ratings";
+import { DEBATE_MAX_STARS, debateStars, skillKeys } from "@/lib/ratings";
 import { sampleTopics } from "@/lib/topics";
 import type { DebateDetail, DebateMessage, Review } from "@/lib/types";
 import { BackButton } from "./back-button";
+import { Mascot } from "./mascot";
 import { MessageBubble } from "./message-bubble";
 import { Stars } from "./stars";
 import { btnChip, btnPrimary, btnSecondary, card, errorBox, input } from "./styles";
@@ -76,8 +77,8 @@ export function ResultsView({ debate, review }: { debate: DebateDetail; review: 
       <header className={`${card} flex animate-pop-in flex-col items-center gap-3 border-help/40 text-center sm:flex-row sm:text-left`}>
         <div className="flex shrink-0 flex-col items-center rounded-3xl bg-help-soft px-6 py-4">
           <span className="text-sm font-bold text-help">{dict.results.yourScore}</span>
-          <span className="text-5xl font-black text-help tabular-nums">{score}/5</span>
-          <Stars count={score} outOf5 className="text-2xl" />
+          <span className="text-5xl font-black text-help tabular-nums">{score}/{DEBATE_MAX_STARS}</span>
+          <span aria-hidden className="text-2xl text-help">★</span>
         </div>
         <div className="space-y-1">
           <h1 className="text-3xl font-black text-balance sm:text-4xl">
@@ -88,6 +89,7 @@ export function ResultsView({ debate, review }: { debate: DebateDetail; review: 
           </p>
           <p className="text-lg">{review.summary}</p>
         </div>
+        <Mascot className="hidden w-24 shrink-0 md:block" />
       </header>
 
       <div className="grid gap-5 md:grid-cols-2">
@@ -99,7 +101,7 @@ export function ResultsView({ debate, review }: { debate: DebateDetail; review: 
             {skillKeys.map((key) => (
               <li key={key} className="flex items-center justify-between gap-3 text-lg font-semibold">
                 <span>{dict.results.skills[key]}</span>
-                <Stars count={review.ratings[key]} outOf5 className="text-xl" />
+                <Stars count={review.ratings[key]} showEmpty className="text-xl" />
               </li>
             ))}
           </ul>

@@ -1,5 +1,8 @@
+import { Mascot } from "./mascot";
+
 interface Props {
   author: string;
+  /** An emoji, or "mascot" for the dino buddy. */
   avatar: string;
   mine: boolean;
   /** Omit to show the "is typing" dots while the reply is on its way. */
@@ -16,7 +19,7 @@ export function MessageBubble({ author, avatar, content, mine, typingLabel }: Pr
         aria-hidden
         className={`grid size-10 shrink-0 place-items-center rounded-full text-2xl ${mine ? "bg-primary/15" : "bg-help-soft"}`}
       >
-        {avatar}
+        {avatar === "mascot" ? <Mascot variant="face" className="size-full object-contain p-0.5" /> : avatar}
       </span>
       <div className={`flex max-w-[85%] flex-col ${mine ? "items-end" : "items-start"}`}>
         <span className="mb-1 px-1 text-sm font-bold text-muted">{author}</span>

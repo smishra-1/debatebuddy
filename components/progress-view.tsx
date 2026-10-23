@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useApiResource } from "@/lib/client/use-api-resource";
 import { format } from "@/lib/i18n/config";
 import { useI18n } from "@/lib/i18n/provider";
-import { badgeIds, debateStars, starSeries, streakDays, totalStars, unlockedBadges } from "@/lib/ratings";
+import { DEBATE_MAX_STARS, badgeIds, debateStars, starSeries, streakDays, totalStars, unlockedBadges } from "@/lib/ratings";
 import { OPPONENT_EMOJI } from "@/lib/opponents";
 import type { DebateSummary } from "@/lib/types";
 import { BackButton } from "./back-button";
@@ -97,12 +97,12 @@ export function ProgressView() {
                   key={index}
                   className="flex h-full flex-1 flex-col items-center justify-end gap-1"
                   role="img"
-                  aria-label={format(dict.common.starsOutOf, { count: stars })}
+                  aria-label={format(dict.common.starsOutOf, { count: stars, max: DEBATE_MAX_STARS })}
                 >
                   <span className="text-sm font-bold">{stars}</span>
                   <span
                     className="w-full max-w-10 origin-bottom rounded-t-lg bg-help motion-safe:animate-fade-up"
-                    style={{ height: `${(stars / 5) * 80}%` }}
+                    style={{ height: `${(stars / DEBATE_MAX_STARS) * 80}%` }}
                   />
                 </li>
               ))}
@@ -173,7 +173,7 @@ export function ProgressView() {
                     <span className="text-sm text-muted">{dayLabel(debate.created_at)}</span>
                   </span>
                   {debate.review ? (
-                    <Stars count={debateStars(debate.review.ratings)} className="text-xl" />
+                    <Stars count={debateStars(debate.review.ratings)} max={DEBATE_MAX_STARS} className="text-xl" />
                   ) : (
                     <span className="shrink-0 rounded-full bg-timer-soft px-2.5 py-0.5 text-sm font-bold text-timer">
                       {dict.progress.inProgress}

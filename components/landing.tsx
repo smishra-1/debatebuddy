@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useUser } from "@/lib/client/use-user";
 import { useI18n } from "@/lib/i18n/provider";
 import { Logo } from "./logo";
+import { Mascot } from "./mascot";
 import { MessageBubble } from "./message-bubble";
 import { btnPrimary, btnSecondary, card, textLink } from "./styles";
 
@@ -57,6 +58,7 @@ export function Landing() {
           <MessageBubble author={dict.common.you} avatar="🙂" mine content={t.preview.student} />
           <MessageBubble author={dict.setup.opponents.fiona.name} avatar="😊" mine={false} content={t.preview.fiona} />
           <div className="flex justify-center gap-1 text-2xl text-help">★★★★★</div>
+          <Mascot className="pointer-events-none absolute -right-3 -bottom-10 w-28 -rotate-3 drop-shadow-md sm:-right-6 sm:w-32" />
         </div>
       </section>
 
