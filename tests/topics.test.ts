@@ -92,8 +92,51 @@ describe("badges", () => {
   it("unlock from a single qualifying debate", () => {
     expect(unlockedBadges([])).toEqual(new Set());
     const got = unlockedBadges([debate("a", ratings({ thinking: 4, facts: 4, kindness: 5, answering: 2 }))]);
-    expect([...got].sort()).toEqual(["coolhead", "finder", "thinker"]);
+    expect([...got].sort()).toEqual(["coolhead", "finder", "firststep", "quick", "thinker"]);
     expect(badgeIds).toContain("champ");
+  });
+
+  it("has 30 badges", () => {
+    expect(new Set(badgeIds).size).toBe(30);
+  });
+
+  it("unlock milestone badges on the debate that reaches them", () => {
+    const five = Array.from({ length: 5 }, (_, i) => debate(`d${4 - i}`, ratings(), `2026-02-0${5 - i}T12:00:00`));
+    const first = badgeFirstEarned(five);
+    expect(first.firststep?.id).toBe("d0");
+    expect(first.warmup?.id).toBe("d2");
+    expect(first.regular?.id).toBe("d4");
+    expect(first.dedicated).toBeUndefined();
+    // ratings() is 11 stars per debate, so 50 stars arrive on the 5th debate.
+    expect(first.stars50?.id).toBe("d4");
+    expect(first.streak3?.id).toBe("d2");
+    expect(first.streak7).toBeUndefined();
+  });
+
+  it("rewards variety and big scores", () => {
+    const max = ratings({ ideas: 5, facts: 5, thinking: 5, answering: 5, kindness: 5 });
+    const hard = { ...debate("h", max, "2026-02-02T12:00:00"), difficulty: "hard" as const, student_side: "against" as const, rounds: 7 };
+    const got = badgeFirstEarned([hard, debate("e", ratings(), "2026-02-01T12:00:00")]);
+    expect(got.perfect?.id).toBe("h");
+    expect(got.topscorer?.id).toBe("h");
+    expect(got.brave?.id).toBe("h");
+    expect(got.longhaul?.id).toBe("h");
+    expect(got.bothsides?.id).toBe("h");
+    expect(got.crew).toBeUndefined();
+  });
+
+  it("awards comeback, quick, weekend and early bird badges", () => {
+    const low = ratings({ ideas: 2, facts: 2, thinking: 2, answering: 2, kindness: 2 });
+    const high = ratings({ ideas: 5, facts: 5, thinking: 5, answering: 5, kindness: 5 });
+    // 2026-03-07 is a Saturday and 2026-03-08 a Sunday.
+    const sat = { ...debate("sat", low, "2026-03-07T07:30:00"), turn_seconds: 60 };
+    const sun = debate("sun", high, "2026-03-08T12:00:00");
+    const got = badgeFirstEarned([sun, sat]);
+    expect(got.comeback?.id).toBe("sun");
+    expect(got.quick?.id).toBe("sat");
+    expect(got.weekend?.id).toBe("sun");
+    expect(got.earlybird?.id).toBe("sat");
+    expect(got.hardhero).toBeUndefined();
   });
 
   it("point each badge at the oldest debate that earned it", () => {

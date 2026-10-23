@@ -50,6 +50,8 @@ export function ProgressView() {
   const debates = data.debates;
   const series = starSeries(debates);
   const badges = unlockedBadges(debates);
+  // 25 badges won't fit on this card: show the earned ones first, then the next ones to aim for.
+  const shownBadges = [...badgeIds.filter((id) => badges.has(id)), ...badgeIds.filter((id) => !badges.has(id))].slice(0, 6);
   const stats = [
     { emoji: "🗣", value: debates.length, label: dict.progress.debates },
     { emoji: "⭐", value: totalStars(debates), label: dict.progress.starsEarned },
@@ -122,7 +124,7 @@ export function ProgressView() {
             </span>
           </h2>
           <ul className="grid grid-cols-2 gap-3">
-            {badgeIds.map((id) => {
+            {shownBadges.map((id) => {
               const unlocked = badges.has(id);
               return (
                 <li
