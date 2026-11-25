@@ -146,6 +146,8 @@ const hi: Dictionary = {
     talk: "बोलें",
     stopTalking: "रुकें",
     listening: "सुन रहा हूँ…",
+    tapToStop: "बोलना खत्म होने पर रुकें दबाएँ।",
+    transcribing: "लिख रहा हूँ…",
     needHelp: "मदद चाहिए?",
     helpTitle: "संकेत",
     helpLoading: "संकेत सोचे जा रहे हैं…",

@@ -10,6 +10,9 @@ export const LIMITS = {
   aiCallsPerMinute: 12,
   aiCallsPerDay: 200,
   requestBodyMaxBytes: 16 * 1024,
+  /** Voice input: one recording is capped in length and size (Vercel bodies max out at 4.5 MB). */
+  speechMaxSeconds: 60,
+  audioMaxBytes: 3 * 1024 * 1024,
   historyPageSize: 50,
   /** "Ask Buddy" chat on the home screen: how much earlier chat is sent with each question. */
   askHistoryMax: 8,

@@ -144,6 +144,8 @@ const en = {
     talk: "Talk",
     stopTalking: "Stop",
     listening: "Listening…",
+    tapToStop: "Tap Stop when you finish speaking.",
+    transcribing: "Writing…",
     needHelp: "Need help?",
     helpTitle: "Hints",
     helpLoading: "Thinking of hints…",

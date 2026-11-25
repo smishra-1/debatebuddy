@@ -1,83 +1,132 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
-import type { Locale } from "@/lib/i18n/config";
+import { LIMITS } from "@/lib/limits";
 
-interface RecognitionResult {
-  results: ArrayLike<ArrayLike<{ transcript: string }>>;
+export type SpeechState = "idle" | "listening" | "transcribing";
+export type SpeechError = "denied" | "failed";
+
+function isSupported(): boolean {
+  return typeof MediaRecorder !== "undefined" && typeof navigator.mediaDevices?.getUserMedia === "function";
 }
-interface Recognition {
-  lang: string;
-  interimResults: boolean;
-  continuous: boolean;
-  onresult: ((event: RecognitionResult) => void) | null;
-  onend: (() => void) | null;
-  onerror: ((event: { error?: string }) => void) | null;
-  start(): void;
-  stop(): void;
-}
-type RecognitionCtor = new () => Recognition;
 
-const LANGS: Record<Locale, string> = { en: "en-IN", hi: "hi-IN" };
-
-function getCtor(): RecognitionCtor | undefined {
-  const w = window as unknown as { SpeechRecognition?: RecognitionCtor; webkitSpeechRecognition?: RecognitionCtor };
-  return w.SpeechRecognition ?? w.webkitSpeechRecognition;
+/** Chrome/Firefox record webm/opus, Safari records mp4; let the browser pick the first one it can do. */
+function pickMimeType(): string | undefined {
+  return ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/ogg;codecs=opus"].find((type) =>
+    MediaRecorder.isTypeSupported(type),
+  );
 }
 
 /**
- * Optional voice input using the browser's built-in speech recognition (only on tap).
- * Some browsers process the audio with their vendor's service; the app itself never records or stores audio.
+ * Optional voice input, only on tap: records a short clip, sends it to /api/transcribe and hands back the text.
+ * Works the same in every modern browser (unlike the built-in SpeechRecognition, which fails in many of them).
+ * The audio is only used to make the text; it is never stored.
  */
-export function useSpeechInput(locale: Locale, onText: (text: string) => void) {
+export function useSpeechInput(onText: (text: string) => void) {
   const supported = useSyncExternalStore(
     () => () => {},
-    () => getCtor() !== undefined,
+    isSupported,
     () => false,
   );
-  const [listening, setListening] = useState(false);
-  const [error, setError] = useState<"denied" | "failed" | null>(null);
-  const recognition = useRef<Recognition | null>(null);
+  const [state, setState] = useState<SpeechState>("idle");
+  const [error, setError] = useState<SpeechError | null>(null);
+  const recorder = useRef<MediaRecorder | null>(null);
+  const stream = useRef<MediaStream | null>(null);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const abort = useRef<AbortController | null>(null);
   const handler = useRef(onText);
   useEffect(() => {
     handler.current = onText;
   }, [onText]);
-  useEffect(() => () => recognition.current?.stop(), []);
 
-  const toggle = useCallback(() => {
-    if (recognition.current) {
-      recognition.current.stop();
+  const releaseMic = useCallback(() => {
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = null;
+    stream.current?.getTracks().forEach((track) => track.stop());
+    stream.current = null;
+  }, []);
+
+  useEffect(
+    () => () => {
+      abort.current?.abort();
+      if (recorder.current?.state === "recording") {
+        recorder.current.onstop = null;
+        recorder.current.stop();
+      }
+      releaseMic();
+    },
+    [releaseMic],
+  );
+
+  const send = useCallback(async (blob: Blob) => {
+    setState("transcribing");
+    const controller = new AbortController();
+    abort.current = controller;
+    try {
+      const response = await fetch("/api/transcribe", {
+        method: "POST",
+        headers: { "Content-Type": blob.type || "audio/webm" },
+        body: blob,
+        signal: controller.signal,
+      });
+      const json = (await response.json().catch(() => null)) as { text?: unknown } | null;
+      const text = typeof json?.text === "string" ? json.text.trim() : "";
+      if (!response.ok || !text) setError("failed");
+      else handler.current(text);
+    } catch {
+      if (!controller.signal.aborted) setError("failed");
+    } finally {
+      if (abort.current === controller) abort.current = null;
+      if (!controller.signal.aborted) setState("idle");
+    }
+  }, []);
+
+  const start = useCallback(async () => {
+    setError(null);
+    let media: MediaStream;
+    try {
+      media = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch (e) {
+      const name = (e as { name?: string } | null)?.name;
+      setError(name === "NotAllowedError" || name === "SecurityError" ? "denied" : "failed");
       return;
     }
-    const Ctor = getCtor();
-    if (!Ctor) return;
-    setError(null);
-    const instance = new Ctor();
-    instance.lang = LANGS[locale];
-    instance.interimResults = false;
-    instance.continuous = false;
-    instance.onresult = (event) => {
-      const transcript = Array.from(event.results)
-        .map((result) => result[0]?.transcript ?? "")
-        .join(" ")
-        .trim();
-      if (transcript) handler.current(transcript);
+    stream.current = media;
+    const mimeType = pickMimeType();
+    const instance = new MediaRecorder(media, mimeType ? { mimeType } : undefined);
+    const chunks: Blob[] = [];
+    instance.ondataavailable = (event) => {
+      if (event.data.size > 0) chunks.push(event.data);
     };
-    const finish = () => {
-      recognition.current = null;
-      setListening(false);
+    instance.onstop = () => {
+      recorder.current = null;
+      releaseMic();
+      const blob = new Blob(chunks, { type: instance.mimeType || mimeType || "audio/webm" });
+      if (blob.size === 0 || blob.size > LIMITS.audioMaxBytes) {
+        setState("idle");
+        setError("failed");
+        return;
+      }
+      void send(blob);
     };
-    instance.onend = finish;
-    instance.onerror = (event) => {
-      // "no-speech" and "aborted" are normal (user stayed quiet or tapped Stop), so only report real failures.
-      if (event.error === "not-allowed" || event.error === "service-not-allowed") setError("denied");
-      else if (event.error && event.error !== "no-speech" && event.error !== "aborted") setError("failed");
-      finish();
-    };
-    recognition.current = instance;
-    setListening(true);
+    recorder.current = instance;
     instance.start();
-  }, [locale]);
+    setState("listening");
+    // Never leave the mic on: stop on our own after the time limit.
+    timer.current = setTimeout(() => {
+      if (instance.state === "recording") instance.stop();
+    }, LIMITS.speechMaxSeconds * 1000);
+  }, [releaseMic, send]);
 
-  return { supported, listening, error, toggle };
+  /** First tap starts recording, second tap stops it and turns the clip into text. */
+  const toggle = useCallback(() => {
+    if (state === "transcribing") return;
+    if (recorder.current?.state === "recording") {
+      recorder.current.stop();
+      return;
+    }
+    void start();
+  }, [start, state]);
+
+  return { supported, state, listening: state === "listening", transcribing: state === "transcribing", error, toggle };
 }

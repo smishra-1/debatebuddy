@@ -43,7 +43,7 @@ export function DebateRoom() {
   const [speechNote, setSpeechNote] = useState(false);
   const log = useRef<HTMLDivElement>(null);
 
-  const speech = useSpeechInput(locale, (text) => setDraft((current) => `${current} ${text}`.trim().slice(0, LIMITS.messageMax)));
+  const speech = useSpeechInput((text) => setDraft((current) => `${current} ${text}`.trim().slice(0, LIMITS.messageMax)));
 
   const messageCount = debate?.messages.length ?? 0;
   // Scroll the chat box itself (not the whole page) so the newest message stays in view.
@@ -263,19 +263,28 @@ export function DebateRoom() {
                 <button
                   type="button"
                   onClick={onTalk}
-                  disabled={busy}
+                  disabled={busy || speech.transcribing}
                   aria-pressed={speech.listening}
                   className={`${btnSecondary} !px-4 ${speech.listening ? "!border-timer !bg-timer-soft !text-timer" : ""}`}
                 >
-                  <span aria-hidden className={speech.listening ? "motion-safe:animate-pulse" : ""}>
-                    🎤
-                  </span>
-                  {speech.listening ? dict.arena.listening : dict.arena.talk}
+                  {speech.transcribing ? (
+                    <Spinner />
+                  ) : (
+                    <span aria-hidden className={speech.listening ? "motion-safe:animate-pulse" : ""}>
+                      {speech.listening ? "⏹️" : "🎤"}
+                    </span>
+                  )}
+                  {speech.transcribing ? dict.arena.transcribing : speech.listening ? dict.arena.stopTalking : dict.arena.talk}
                 </button>
                 <button type="submit" className={`${btnPrimary} flex-1`} disabled={busy || !draft.trim()}>
                   {dict.arena.send} <span aria-hidden>➤</span>
                 </button>
               </div>
+              {speech.listening && (
+                <p role="status" className="text-sm font-bold text-timer">
+                  {dict.arena.listening} {dict.arena.tapToStop}
+                </p>
+              )}
               {speechNote && <p className="text-sm text-muted">{dict.errors.speech_unsupported}</p>}
               {speech.error && (
                 <p role="status" className="text-sm text-muted">
