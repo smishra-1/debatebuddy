@@ -31,6 +31,13 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  // Signed-in students have no use for the introduction: send them straight to the app.
+  if (signedIn && page === "welcome") {
+    const url = request.nextUrl.clone();
+    url.pathname = `/${first}`;
+    return NextResponse.redirect(url);
+  }
+
   if (!signedIn && !PUBLIC_PAGES.has(page ?? "")) {
     const url = request.nextUrl.clone();
     url.pathname = `/${first}/login`;

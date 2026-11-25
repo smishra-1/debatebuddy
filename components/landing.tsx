@@ -25,7 +25,7 @@ export function Landing() {
           <p className="max-w-xl text-lg text-muted text-pretty">{t.subtitle}</p>
           <div className="flex flex-wrap gap-3">
             {user ? (
-              <Link href={`/${locale}`} className={btnPrimary}>
+              <Link href={`/${locale}`} prefetch={false} className={btnPrimary}>
                 {dict.howTo.start} <span aria-hidden>🚀</span>
               </Link>
             ) : (
