@@ -277,6 +277,11 @@ export function DebateRoom() {
                 </button>
               </div>
               {speechNote && <p className="text-sm text-muted">{dict.errors.speech_unsupported}</p>}
+              {speech.error && (
+                <p role="status" className="text-sm text-muted">
+                  {speech.error === "denied" ? dict.errors.speech_denied : dict.errors.speech_failed}
+                </p>
+              )}
             </form>
           )}
           {error && (

@@ -426,6 +426,8 @@ const en = {
     server_error: "Something went wrong. Please try again.",
     network: "Check your internet and try again.",
     speech_unsupported: "Talking is not available on this device. You can type instead.",
+    speech_denied: "Microphone is blocked. Allow it in your browser settings, or type instead.",
+    speech_failed: "Could not hear you. Please try again, or type instead.",
   },
   footer: {
     text: "Built with open-source tools for students everywhere. Supports SDG 4 and SDG 10.",

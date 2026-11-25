@@ -12,7 +12,7 @@ interface Recognition {
   continuous: boolean;
   onresult: ((event: RecognitionResult) => void) | null;
   onend: (() => void) | null;
-  onerror: (() => void) | null;
+  onerror: ((event: { error?: string }) => void) | null;
   start(): void;
   stop(): void;
 }
@@ -36,6 +36,7 @@ export function useSpeechInput(locale: Locale, onText: (text: string) => void) {
     () => false,
   );
   const [listening, setListening] = useState(false);
+  const [error, setError] = useState<"denied" | "failed" | null>(null);
   const recognition = useRef<Recognition | null>(null);
   const handler = useRef(onText);
   useEffect(() => {
@@ -50,6 +51,7 @@ export function useSpeechInput(locale: Locale, onText: (text: string) => void) {
     }
     const Ctor = getCtor();
     if (!Ctor) return;
+    setError(null);
     const instance = new Ctor();
     instance.lang = LANGS[locale];
     instance.interimResults = false;
@@ -66,11 +68,16 @@ export function useSpeechInput(locale: Locale, onText: (text: string) => void) {
       setListening(false);
     };
     instance.onend = finish;
-    instance.onerror = finish;
+    instance.onerror = (event) => {
+      // "no-speech" and "aborted" are normal (user stayed quiet or tapped Stop), so only report real failures.
+      if (event.error === "not-allowed" || event.error === "service-not-allowed") setError("denied");
+      else if (event.error && event.error !== "no-speech" && event.error !== "aborted") setError("failed");
+      finish();
+    };
     recognition.current = instance;
     setListening(true);
     instance.start();
   }, [locale]);
 
-  return { supported, listening, toggle };
+  return { supported, listening, error, toggle };
 }
